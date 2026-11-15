@@ -8,16 +8,25 @@ import org.lwjgl.glfw.GLFW;
 
 public class ClickGuiScreen extends Screen {
 
-    private static final int PANEL = 0xDD21191D;
-    private static final int GLASS = 0x665C343B;
-    private static final int RED = 0xFFFF7777;
-    private static final int WHITE = 0xFFF4E9E9;
-    private static final int MUTED = 0xFF95868A;
+    private static final int BG = 0xB8080507;
+    private static final int PANEL = 0xD91D1519;
+    private static final int PANEL_INNER = 0x665A3038;
+    private static final int RED = 0xFFFF555F;
+    private static final int RED_DARK = 0xFF9E2934;
+    private static final int WHITE = 0xFFFFF3ED;
+    private static final int MUTED = 0xFFAA9699;
+    private static final int GREEN = 0xFF77D9A0;
 
     private final String[] categories = {
         "Combat", "Movement", "Player",
         "Render", "Misc", "Configs"
     };
+
+    private int startX;
+    private int startY;
+    private int columnWidth;
+    private int gap = 7;
+    private int panelBottom;
 
     public ClickGuiScreen() {
         super(Text.literal("KITKAT CLIENT"));
@@ -28,95 +37,242 @@ public class ClickGuiScreen extends Screen {
         return false;
     }
 
-    @Override
-    public void render(DrawContext ctx, int mouseX,
-                       int mouseY, float delta) {
+    private void calculateLayout() {
+        int margin = 10;
 
-        ctx.fill(0, 0, width, height, 0x99050008);
-
-        int gap = 8;
-        int margin = 12;
-        int columnWidth = Math.min(155,
-            (width - margin * 2 - gap * 5) / 6);
+        columnWidth = Math.min(
+            170,
+            Math.max(85,
+                (width - margin * 2 - gap * 5) / 6)
+        );
 
         int total = columnWidth * 6 + gap * 5;
-        int startX = (width - total) / 2;
-        int startY = Math.max(25, (height - 440) / 2);
+
+        startX = (width - total) / 2;
+        startY = Math.max(15, (height - 430) / 2);
+
+        panelBottom = height - 35;
+    }
+
+    @Override
+    public void render(
+        DrawContext ctx,
+        int mouseX,
+        int mouseY,
+        float delta
+    ) {
+        calculateLayout();
+
+        ctx.fill(0, 0, width, height, BG);
+
+        renderTopBar(ctx);
 
         for (int i = 0; i < categories.length; i++) {
-
             int x = startX + i * (columnWidth + gap);
 
-            int bottom = Math.min(height - 30, startY + 440);
-
-            glassPanel(ctx, x, startY,
-                x + columnWidth, bottom);
-
-            ctx.fill(x + 2, startY + 2,
-                x + columnWidth - 2, startY + 34, GLASS);
-
-            ctx.drawCenteredTextWithShadow(
-                textRenderer,
-                categories[i],
-                x + columnWidth / 2,
-                startY + 13,
-                WHITE
-            );
+            renderPanel(ctx, x, i);
 
             if (i < 5) {
-                renderModules(ctx, x, startY,
-                    columnWidth, mouseX, mouseY, i);
+                renderModules(
+                    ctx, x, mouseX, mouseY, i
+                );
             } else {
-                renderConfigs(ctx, x, startY);
+                renderConfigs(ctx, x, mouseX, mouseY);
             }
         }
 
         ctx.drawCenteredTextWithShadow(
             textRenderer,
-            "KITKAT CLIENT 1.0.0 | RIGHT SHIFT",
+            "KITKAT CLIENT  |  1.0.0  |  RIGHT SHIFT",
             width / 2,
-            height - 18,
+            height - 19,
             RED
         );
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
+    private void renderTopBar(DrawContext ctx) {
+        int x = startX;
+        int y = Math.max(2, startY - 29);
+        int w = columnWidth * 6 + gap * 5;
+
+        ctx.fill(x, y, x + w, y + 23, 0xDD211519);
+        ctx.fill(x, y, x + w, y + 1, RED);
+        ctx.fill(x, y + 22, x + w, y + 23, 0x66FFFFFF);
+
+        ctx.drawText(
+            textRenderer,
+            "KITKAT",
+            x + 9,
+            y + 8,
+            RED,
+            true
+        );
+
+        ctx.drawText(
+            textRenderer,
+            "CLIENT",
+            x + 48,
+            y + 8,
+            WHITE,
+            false
+        );
+
+        String status = "FABRIC 1.21.4";
+
+        ctx.drawText(
+            textRenderer,
+            status,
+            x + w - textRenderer.getWidth(status) - 9,
+            y + 8,
+            MUTED,
+            false
+        );
+    }
+
+    private void renderPanel(
+        DrawContext ctx,
+        int x,
+        int category
+    ) {
+        int w = columnWidth;
+        int y = startY;
+        int bottom = panelBottom;
+
+        // Glass shadow
+        ctx.fill(
+            x + 3, y + 4,
+            x + w + 3, bottom + 4,
+            0x55000000
+        );
+
+        // Main glass body
+        ctx.fill(
+            x + 2, y,
+            x + w - 2, bottom,
+            PANEL
+        );
+
+        ctx.fill(
+            x, y + 3,
+            x + w, bottom - 3,
+            PANEL
+        );
+
+        // Glass reflections
+        ctx.fill(
+            x + 4, y + 2,
+            x + w - 4, y + 3,
+            0x99FFFFFF
+        );
+
+        ctx.fill(
+            x + 2, y + 4,
+            x + 3, bottom - 4,
+            0x55FFFFFF
+        );
+
+        ctx.fill(
+            x + 3, bottom - 3,
+            x + w - 3, bottom - 2,
+            0x44FFFFFF
+        );
+
+        // Header glass
+        ctx.fill(
+            x + 3, y + 4,
+            x + w - 3, y + 34,
+            PANEL_INNER
+        );
+
+        // Red accent
+        ctx.fill(
+            x + 4, y + 4,
+            x + 7, y + 34,
+            RED
+        );
+
+        ctx.drawCenteredTextWithShadow(
+            textRenderer,
+            categories[category],
+            x + w / 2,
+            y + 15,
+            WHITE
+        );
+
+        ctx.fill(
+            x + 7, y + 37,
+            x + w - 7, y + 38,
+            0x44FFFFFF
+        );
+    }
+
     private void renderModules(
         DrawContext ctx,
         int x,
-        int y,
-        int w,
         int mouseX,
         int mouseY,
         int category
     ) {
-
         Module.Category cat =
             Module.Category.values()[category];
 
-        int currentY = y + 43;
+        int currentY = startY + 44;
+        int available = 0;
+        int enabled = 0;
+
+        for (Module module :
+            KitKatClient.MODULES.getModules(cat)) {
+            if (module.isAvailable()) available++;
+            if (module.isEnabled()) enabled++;
+        }
+
+        String count = enabled + "/" +
+            KitKatClient.MODULES.getModules(cat).size();
+
+        ctx.drawText(
+            textRenderer,
+            count,
+            x + 9,
+            startY + 40,
+            MUTED,
+            false
+        );
+
+        currentY += 15;
 
         for (Module module :
             KitKatClient.MODULES.getModules(cat)) {
 
-            if (currentY > height - 45) break;
+            if (currentY + 22 > panelBottom - 5) {
+                break;
+            }
+
+            int left = x + 5;
+            int right = x + columnWidth - 5;
 
             boolean hover =
-                mouseX >= x + 5 &&
-                mouseX <= x + w - 5 &&
-                mouseY >= currentY - 3 &&
+                mouseX >= left &&
+                mouseX <= right &&
+                mouseY >= currentY - 2 &&
                 mouseY <= currentY + 20;
 
             if (hover) {
                 ctx.fill(
-                    x + 5, currentY - 3,
-                    x + w - 5, currentY + 21,
-                    0x664B3038
+                    left, currentY - 2,
+                    right, currentY + 20,
+                    0x554E3038
+                );
+
+                ctx.fill(
+                    left, currentY - 2,
+                    left + 2, currentY + 20,
+                    RED
                 );
             }
 
-            int color = !module.isAvailable()
+            int textColor = !module.isAvailable()
                 ? MUTED
                 : module.isEnabled() ? RED : WHITE;
 
@@ -124,44 +280,79 @@ public class ClickGuiScreen extends Screen {
                 textRenderer,
                 module.getName(),
                 x + 10,
-                currentY + 4,
-                color,
+                currentY + 5,
+                textColor,
                 false
             );
 
-            int switchColor = !module.isAvailable()
-                ? 0xFF494044
-                : module.isEnabled() ? RED : 0xFF55474B;
+            // Switch background
+            int switchX = x + columnWidth - 25;
 
             ctx.fill(
-                x + w - 19,
-                currentY + 7,
-                x + w - 10,
+                switchX,
+                currentY + 5,
+                switchX + 17,
                 currentY + 15,
-                switchColor
+                !module.isAvailable()
+                    ? 0xFF393237
+                    : module.isEnabled()
+                        ? RED_DARK
+                        : 0xFF51464A
             );
 
-            currentY += 25;
+            // Switch indicator
+            int knobX = module.isEnabled()
+                ? switchX + 10
+                : switchX + 2;
+
+            int knobColor = module.isEnabled()
+                ? WHITE
+                : 0xFFB6A9AC;
+
+            ctx.fill(
+                knobX,
+                currentY + 7,
+                knobX + 5,
+                currentY + 13,
+                knobColor
+            );
+
+            currentY += 24;
         }
     }
 
     private void renderConfigs(
-        DrawContext ctx, int x, int y
+        DrawContext ctx,
+        int x,
+        int mouseX,
+        int mouseY
     ) {
+        int y = startY;
 
-        ctx.drawText(textRenderer,
-            "THEME", x + 12, y + 48, RED, false);
+        drawSection(ctx, "THEME", x + 10, y + 49);
 
-        ctx.drawText(textRenderer,
-            "Liquid Glass", x + 12, y + 72,
-            WHITE, false);
+        ctx.drawText(
+            textRenderer,
+            "Liquid Glass",
+            x + 10,
+            y + 65,
+            WHITE,
+            false
+        );
 
-        ctx.drawText(textRenderer,
-            "COLORS", x + 12, y + 110,
-            RED, false);
+        ctx.drawText(
+            textRenderer,
+            "KITKAT EDITION",
+            x + 10,
+            y + 80,
+            MUTED,
+            false
+        );
+
+        drawSection(ctx, "COLORS", x + 10, y + 108);
 
         int[] colors = {
-            0xFFFF5555,
+            0xFFFF555F,
             0xFFB52E38,
             0xFF7D2630,
             0xFFFF9999,
@@ -170,38 +361,97 @@ public class ClickGuiScreen extends Screen {
         };
 
         for (int i = 0; i < colors.length; i++) {
-            int cx = x + 12 + i * 19;
-            ctx.fill(cx, y + 135, cx + 13, y + 148,
-                colors[i]);
+            int cx = x + 10 + i * 20;
+            int cy = y + 126;
+
+            ctx.fill(
+                cx - 1, cy - 1,
+                cx + 14, cy + 14,
+                0xAAFFFFFF
+            );
+
+            ctx.fill(
+                cx, cy,
+                cx + 12, cy + 12,
+                colors[i]
+            );
         }
 
-        ctx.drawText(textRenderer,
-            "CONFIGS", x + 12, y + 180,
-            RED, false);
+        drawSection(ctx, "CONFIGS", x + 10, y + 165);
 
-        ctx.drawText(textRenderer,
-            "Default", x + 12, y + 205,
-            WHITE, false);
+        int configY = y + 183;
 
-        ctx.drawText(textRenderer,
-            "KITKAT CLIENT", x + 12, y + 240,
-            MUTED, false);
+        ctx.fill(
+            x + 7, configY,
+            x + columnWidth - 7, configY + 22,
+            0x664D3038
+        );
+
+        ctx.fill(
+            x + 7, configY,
+            x + 9, configY + 22,
+            RED
+        );
+
+        ctx.drawText(
+            textRenderer,
+            "Default",
+            x + 14,
+            configY + 7,
+            WHITE,
+            false
+        );
+
+        drawSection(ctx, "INFORMATION", x + 10, y + 229);
+
+        ctx.drawText(
+            textRenderer,
+            "Version 1.0.0",
+            x + 10,
+            y + 247,
+            MUTED,
+            false
+        );
+
+        ctx.drawText(
+            textRenderer,
+            "Fabric 1.21.4",
+            x + 10,
+            y + 262,
+            MUTED,
+            false
+        );
+
+        ctx.fill(
+            x + 9, y + 285,
+            x + columnWidth - 9, y + 286,
+            0x44FFFFFF
+        );
+
+        ctx.drawText(
+            textRenderer,
+            "Made with KitKat",
+            x + 10,
+            y + 296,
+            RED,
+            false
+        );
     }
 
-    private void glassPanel(
+    private void drawSection(
         DrawContext ctx,
-        int x1, int y1,
-        int x2, int y2
+        String title,
+        int x,
+        int y
     ) {
-
-        ctx.fill(x1 + 3, y1, x2 - 3, y2, PANEL);
-        ctx.fill(x1, y1 + 3, x2, y2 - 3, PANEL);
-
-        ctx.fill(x1 + 3, y1 + 1,
-            x2 - 3, y1 + 2, 0x66FFAAAA);
-
-        ctx.fill(x1 + 3, y2 - 2,
-            x2 - 3, y2 - 1, 0x44FFFFFF);
+        ctx.drawText(
+            textRenderer,
+            title,
+            x,
+            y,
+            RED,
+            true
+        );
     }
 
     @Override
@@ -210,38 +460,34 @@ public class ClickGuiScreen extends Screen {
         double mouseY,
         int button
     ) {
-
         if (button == 0) {
-
-            int gap = 8;
-            int margin = 12;
-
-            int columnWidth = Math.min(155,
-                (width - margin * 2 - gap * 5) / 6);
-
-            int total = columnWidth * 6 + gap * 5;
-            int startX = (width - total) / 2;
-            int startY = Math.max(25, (height - 440) / 2);
+            calculateLayout();
 
             for (int i = 0; i < 5; i++) {
-
                 int x = startX + i * (columnWidth + gap);
-                int currentY = startY + 43;
+                int currentY = startY + 59;
 
                 for (Module module :
                     KitKatClient.MODULES.getModules(
                         Module.Category.values()[i])) {
 
+                    if (currentY + 22 > panelBottom - 5) {
+                        break;
+                    }
+
                     if (mouseX >= x + 5 &&
                         mouseX <= x + columnWidth - 5 &&
-                        mouseY >= currentY - 3 &&
-                        mouseY <= currentY + 21) {
+                        mouseY >= currentY - 2 &&
+                        mouseY <= currentY + 20) {
 
-                        module.toggle();
+                        if (module.isAvailable()) {
+                            module.toggle();
+                        }
+
                         return true;
                     }
 
-                    currentY += 25;
+                    currentY += 24;
                 }
             }
         }
@@ -255,7 +501,6 @@ public class ClickGuiScreen extends Screen {
         int scanCode,
         int modifiers
     ) {
-
         if (key == GLFW.GLFW_KEY_ESCAPE ||
             key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
             close();
@@ -265,3 +510,4 @@ public class ClickGuiScreen extends Screen {
         return super.keyPressed(key, scanCode, modifiers);
     }
 }
+
